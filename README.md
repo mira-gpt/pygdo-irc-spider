@@ -1,12 +1,12 @@
 # pygdo-irc-spider
 
-An optional PyGDO extension point for building consent-aware IRC discovery and
-indexing features.
+An opt-in PyGDO IRC discovery bot. It uses an already configured IRC server,
+requests its public channel list, and visits at most one previously unvisited
+channel at a time. It does not read or store channel messages.
 
-The module deliberately does **not** connect to IRC, crawl channels, capture
-messages, or publish collected data by itself. The `irc` module owns protocol
-connections. Future spider features must be explicitly configured, scoped to
-the server/channel in question, and documented before collection begins.
+Mira introduces herself in each visit and leaves again unless somebody there
+explicitly approves the channel with `$hello`. Only approved channels are
+added to autojoin.
 
 ## Installation
 
@@ -19,36 +19,49 @@ the module:
 
 ## Summary
 
-Searches the internet for an not yet visited IRC Network.
-Adds, joins and /list after 5 minutes.
-Picks an unknown channel every minute and joins.
-Introduces thyself with instructions.
+Staff selects an existing IRC server with `$spider.server`. While enabled, the
+Spider requests `LIST` on its cooldown, records public channel names and user
+counts, and chooses a random unvisited channel. There is no automatic web or
+network search. Staff must explicitly select an already configured IRC server
+with `$spider.server <server>` before channel discovery can run.
 
 ## Methods
 
-$hello [<bot_name>] marks this channel as spider_success. Adds channel to autojoin.
-$spider [<1>] - Enables (`1`) or disables (`0`) the spider engine.
-$spiderserv [<server>] - Sets the current spider server or Searches the web for a new network. Adds and marks a server as spiderserv active 1
-$spiderlist - picks the current spider server and issues list and builds channel list
+$hello approves the active Spider visit in the current channel and adds it to autojoin.
+$spider [<0|1>] - Without arguments shows status and per-server state counts; otherwise enables (`1`) or disables (`0`) the spider engine.
+$spider.server <server> - Selects the Spider IRC server; the argument is required.
+$spider.list - Requests `LIST` from the selected server and builds the channel list.
+$spider.channel - Queues a random unvisited channel (also invoked by the timer).
+
+Only `$spider` is shown in general help. These examples use `$`; the introduction
+uses the selected server's actual command prefix.
 
 
 ## Events
 
-timer which checks if spider is enabled. sets active spider server if enabled. issues a spider list. picks an unvisited channel and introduces itself.
-irc_kick - the bot configures this channel as spider_failed=1
-irc_list - Continues building the channel list, then chooses one unvisited
-channel after the complete LIST response has arrived.
+The timer checks whether Spider is enabled, expires unapproved visits, and
+requests a fresh `LIST` after the configured cooldown. A timed-out `LIST` is
+also retried on that cooldown. A complete `LIST` response notifies the requesting
+control channel. The timer chooses one unvisited channel; the introduction is
+sent after JOIN confirmation.
+
+A kick marks that channel as failed and disables its autojoin. Unapproved visits
+also have autojoin disabled. Approval with `hello` enables it explicitly.
 
 ## Configuration
 
-irc_spider_enabled - Enables spider engine
-irc_spider_cooldown - Duration cooldown of channel visit
+`irc_spider_enabled` enables the engine.
+
+`irc_spider_cooldown` is the interval between LIST requests.
+
+`irc_spider_intro_timeout` is how long an unapproved visit remains before the
+bot leaves (default: `42m`). The introduction displays this configured duration;
+the waiting period starts when the bot joins. Expiry is checked every minute.
 
 
 ## Dependencies
 
  - [pygdo-irc](https://github.com/gizmore/pygdo-irc)
- - [pygdo-google-search](https://github.com/mira-gpt/pygdo-google-search)
 
 
 ## License
