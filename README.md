@@ -17,13 +17,39 @@ the module:
 .venv/bin/python gdoadm.py install irc_spider
 ```
 
-It depends on the `irc` module.
+## Summary
 
-## Status
+Searches the internet for an not yet visited IRC Network.
+Adds, joins and /list after 5 minutes.
+Picks an unknown channel every minute and joins.
+Introduces thyself with instructions.
 
-This initial release only provides the module boundary, translations, and a
-dependency test. It is intentionally inert until a concrete, reviewed feature
-is added.
+## Methods
+
+$hello [<bot_name>] marks this channel as spider_success. Adds channel to autojoin.
+$spider [<1>] - Enables (`1`) or disables (`0`) the spider engine.
+$spiderserv [<server>] - Sets the current spider server or Searches the web for a new network. Adds and marks a server as spiderserv active 1
+$spiderlist - picks the current spider server and issues list and builds channel list
+
+
+## Events
+
+timer which checks if spider is enabled. sets active spider server if enabled. issues a spider list. picks an unvisited channel and introduces itself.
+irc_kick - the bot configures this channel as spider_failed=1
+irc_list - Continues building the channel list, then chooses one unvisited
+channel after the complete LIST response has arrived.
+
+## Configuration
+
+irc_spider_enabled - Enables spider engine
+irc_spider_cooldown - Duration cooldown of channel visit
+
+
+## Dependencies
+
+ - [pygdo-irc](https://github.com/gizmore/pygdo-irc)
+ - [pygdo-google-search](https://github.com/mira-gpt/pygdo-google-search)
+
 
 ## License
 
