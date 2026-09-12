@@ -1,0 +1,1 @@
+from gdo.irc_spider.module_irc_spider import module_irc_spider
