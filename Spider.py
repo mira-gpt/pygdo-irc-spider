@@ -30,12 +30,14 @@ class Spider:
     @classmethod
     async def on_timer(cls):
         module = cls.module()
-        if not module.get_config_value('irc_spider_enabled'):
-            return
+        enabled = module.get_config_value('irc_spider_enabled')
         cooldown = module.get_config_value('irc_spider_cooldown')
         timeout = module.get_config_value('irc_spider_intro_timeout')
+        for state in GDO_SpiderServer.table().all():
+            await cls.expire_visits(state, timeout if enabled and state.gdo_val('ss_active') == '1' else 0)
+        if not enabled:
+            return
         for state in GDO_SpiderServer.active():
-            await cls.expire_visits(state, timeout)
             last_list = state.gdo_value('ss_last_list')
             due = not last_list or Application.TIME - last_list.timestamp() >= cooldown
             # A server can lose its LIST end reply. The cooldown doubles as a
@@ -49,8 +51,16 @@ class Spider:
         for channel in GDO_SpiderChannel.table().all(where):
             last_visit = channel.gdo_value('sc_last_visit')
             if last_visit and Application.TIME - last_visit.timestamp() >= timeout:
-                await state.get_server().get_connector().send_raw(f"PART {channel.gdo_val('sc_name')} :No approval received")
+                connector = state.get_server().get_connector()
+                if connector.is_connected():
+                    await connector.send_raw(f"PART {channel.gdo_val('sc_name')} :No approval received")
                 channel.save_val('sc_state', GDO_SpiderChannel.EXPIRED)
+
+    @classmethod
+    async def on_reconnected(cls, server, _message):
+        state = GDO_SpiderServer.table().get_by_vals({'ss_server': server.get_id()})
+        if state:
+            await cls.expire_visits(state, 0)
 
     @classmethod
     async def on_list_entry(cls, server, name: str, users: int, _topic: str):

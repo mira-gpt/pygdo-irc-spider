@@ -46,6 +46,7 @@ class IRCSpiderModuleTest(unittest.IsolatedAsyncioTestCase):
         Application.mode(Mode.render_irc)
         method = hello()
         method._env_channel = Mock()
+        method._env_channel.get_trigger.return_value = '.'
         method.msg = Mock()
         method.empty = Mock()
         with (
@@ -56,6 +57,7 @@ class IRCSpiderModuleTest(unittest.IsolatedAsyncioTestCase):
             visit = channels.return_value.get_by_vals.return_value
             await method.gdo_execute()
             visit.save_val.assert_called_once_with('sc_state', GDO_SpiderChannel.SUCCESS)
+            method.msg.assert_called_once_with('msg_irc_spider_hello')
             autojoin.return_value.env_copy.return_value.save_config_channel.assert_called_once_with('auto_join', '1')
             self.assertEqual(GDO_SpiderChannel.VISITING, channels.return_value.get_by_vals.call_args.args[0]['sc_state'])
 

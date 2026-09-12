@@ -28,9 +28,9 @@ class module_irc_spider(GDO_Module):
         Application.EVENTS.add_timer_async(60, self.on_timer, repeat=2_000_000_000)
 
     async def on_timer(self):
+        await Spider.on_timer()
         if not self.get_config_value('irc_spider_enabled'):
             return
-        await Spider.on_timer()
         from gdo.irc_spider.method.spider_channel import spider_channel
         await spider_channel.on_timer()
 
@@ -39,3 +39,4 @@ class module_irc_spider(GDO_Module):
         Application.EVENTS.subscribe('irc_list_finished', Spider.on_list_finished)
         Application.EVENTS.subscribe('irc_bot_kicked', Spider.on_bot_kicked)
         Application.EVENTS.subscribe('bot_joined_channel', Spider.on_bot_joined)
+        Application.EVENTS.subscribe('irc_connected', Spider.on_reconnected)
